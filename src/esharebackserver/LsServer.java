@@ -29,10 +29,14 @@ public class LsServer {
     public static void main(String[] args) {
         //System.out.println(Constants.ROOT_DIR);
         //System.out.println(new LsServer().listDir(""));
-        (new LsServer()).startServer();
+        //(new LsServer()).startServer();
     }
     
     ServerSocket ss = null;
+    LsCallback callback;
+    public LsServer(LsCallback callback){
+        this.callback = callback;
+    }
     
     public void startServer(){
         //Create root Dir
@@ -43,17 +47,36 @@ public class LsServer {
 
         String result = null;
         
-        try {
+        try {   
+                ss = new ServerSocket(Constants.PORT_LS);
+                callback.onLsServerStarted();
+        } catch (IOException ex) {
+            String msg = "\n\n**"+Constants.ERR_PORT + Constants.PORT_LS+"**";
+            String sol = "SOLUTION: Find [PID_OF_PROCESS] running on port using command:"
+                    + "\n\tlsof -i :"+Constants.PORT_LS+" | grep LISTEN | cut -d' ' -f2"
+                    + "\nAnd Kill Process using command:"
+                    + "\n\tkill -9 [PID_OF_PROCESS]\n\n";
+            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, msg + "\n"+ sol);
+            callback.onLsServerStopped();
+            return;
+        }
             
-            ss = new ServerSocket(Constants.PORT_LS);
-            
-            while(true){
-                //Start Listening
-                System.out.println("Waiting...");
-                Socket skt = ss.accept();
-                System.out.println("Connection Accepted");
-                //-- Start Listening
+        while(true){
+            //Start Listening
+            Socket skt = null;
+            try{
+                System.out.println("Ls Waiting...");
+                skt = ss.accept();
+                System.out.println("Ls Connection Accepted");
+            }
+            catch(IOException ex){
+                ex.printStackTrace();
+                System.out.println("LS Server Stopped");
+                return;
+            }
+            //-- Start Listening
 
+            try{
                 //Receiving Dir Request
                 BufferedReader br = new BufferedReader(new InputStreamReader(skt.getInputStream()));
                 result = "";
@@ -68,16 +91,30 @@ public class LsServer {
                 }
                 System.out.println("Request: "+result);
                 //-- Receiving Dir Request
+            }
+            catch(IOException ex){
+                ex.printStackTrace();
+                continue;
+            }
 
-                //Decode Dir
+            //Decode Dir
+            String path = null; 
+            try{
                 JSONObject main = new JSONObject(result);
-                String path = main.getString(Constants.JSON_LIST_DIR); 
-                //-- Decode Dir
+                path = main.getString(Constants.JSON_LIST_DIR);
+            }
+            catch (JSONException ex) {
+                String str = Constants.ERR_JSON + "\n\t" + result;
+                Logger.getLogger(LsServer.class.getName()).log(Level.SEVERE, str );
+                continue;
+            }
+            //-- Decode Dir
 
-                //Listing Files
-                String response = listDir(path);
-                //-- Listing Files
+            //Listing Files
+            String response = listDir(path);
+            //-- Listing Files
 
+            try{
                 //Sending Response
                 PrintWriter out = new PrintWriter(
                             new BufferedWriter(
@@ -88,19 +125,9 @@ public class LsServer {
                 out.flush();
                 //-- Sending Response
             }
-        
-            
-        } catch (IOException ex) {
-            String msg = "\n\n**"+Constants.ERR_PORT + Constants.PORT_LS+"**";
-            String sol = "SOLUTION: Find [PID_OF_PROCESS] running on port using command:"
-                    + "\n\tlsof -i :"+Constants.PORT_LS+" | grep LISTEN | cut -d' ' -f2"
-                    + "\nAnd Kill Process using command:"
-                    + "\n\tkill -9 [PID_OF_PROCESS]\n\n";
-            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, msg + "\n"+ sol);
-        }
-        catch (JSONException ex) {
-                String str = Constants.ERR_JSON + "\n\t" + result;
-                Logger.getLogger(LsServer.class.getName()).log(Level.SEVERE, str );
+            catch(IOException ex){
+                ex.printStackTrace();
+            }
         }
         
     }
@@ -108,6 +135,7 @@ public class LsServer {
     public void stopServer(){
         try {
             ss.close();
+            callback.onLsServerStopped();
         } catch (IOException ex) {
             Logger.getLogger(LsServer.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -157,5 +185,10 @@ public class LsServer {
             //-- Listing Dir
         
         return response.toString();
+    }
+    
+    public interface LsCallback{
+        void onLsServerStarted();
+        void onLsServerStopped();
     }
 }

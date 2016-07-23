@@ -26,13 +26,20 @@ import org.json.JSONObject;
  * @author sagar
  */
 public class FileReceiver {
-    
+
     public static void main(String[] args) {
-        new FileReceiver().myMain();
+        //new FileReceiver().startServer();
     }
+
+    ServerSocket ss;
     
-    public void myMain(){
-    
+    FrCallback callback;
+    public FileReceiver(FrCallback callback){
+        this.callback = callback;
+    }
+
+    public void startServer() {
+
         Socket skt = null;
         byte[] fileByte = new byte[8192];
         InputStream is;
@@ -40,77 +47,122 @@ public class FileReceiver {
         int readSize;
 
         try {
-            ServerSocket ss = new ServerSocket(Constants.PORT_FILE_C2S);
+            ss = new ServerSocket(Constants.PORT_FILE_C2S);
+            callback.onFrServerStarted();
+        } catch (IOException ex) {
+            String msg = "\n\n**" + Constants.ERR_PORT + Constants.PORT_FILE_C2S + "**";
+            String sol = "SOLUTION: Find [PID_OF_PROCESS] running on port using command:"
+                    + "\n\tlsof -i :" + Constants.PORT_FILE_C2S + " | grep LISTEN | cut -d' ' -f2"
+                    + "\nAnd Kill Process using command:"
+                    + "\n\tkill -9 [PID_OF_PROCESS]\n\n";
+            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, msg + "\n" + sol);
 
-            while(true){
-                
-                System.out.println("Waiting...");
+            ex.printStackTrace();
+            callback.onFrServerStopped();
+            return;
+        }
+
+        while (true) {
+
+            try {
+                System.out.println("FR Waiting...");
                 skt = ss.accept();
-                System.out.println("Connected...");
-                
-                //Receiving File Name
-                BufferedReader br = new BufferedReader(new InputStreamReader(skt.getInputStream()));
-                String result = "";
-                String temp = "";
-                while((temp = br.readLine()) != null){
-                    if(temp.contains(Constants.END_OF_MSG)){
+                System.out.println("FR Connected...");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                System.out.println("FR Server Stopped");
+                return;
+            }
+
+            //Receiving File Name
+            BufferedReader br;
+            String result = "";
+            String temp = "";
+            try {
+                br = new BufferedReader(new InputStreamReader(skt.getInputStream()));
+                while ((temp = br.readLine()) != null) {
+                    if (temp.contains(Constants.END_OF_MSG)) {
                         temp = temp.replace(Constants.END_OF_MSG, "");
-                        result+=temp;
+                        result += temp;
                         break;
                     }
                     result += temp;
                 }
-                System.out.println("Filename: "+result);
+                System.out.println("Filename: " + result);
+            } catch (IOException ex) {
+                Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                continue;
+            }
                 //-- Receiving File Name
-                
-                //Decode Dir(get file name that to be send)
+
+            String filePath;
+            //Decode Dir(get file name that to be send)
+            try {
                 JSONObject main = new JSONObject(result);
-                String filePath = main.getString(Constants.JSON_FILE_DWNLD); 
-                //-- Decode Dir
-                
-                //Creating New Directories
-                File f = new File(Constants.ROOT_DIR+filePath);
-                f = f.getParentFile();
-                f.mkdirs();
+                filePath = main.getString(Constants.JSON_FILE_DWNLD);
+            } catch (JSONException ex) {
+                Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                continue;
+            }
+            //-- Decode Dir
+
+            //Creating New Directories
+            File f = new File(Constants.ROOT_DIR + filePath);
+            f = f.getParentFile();
+            f.mkdirs();
                 //-- Creating New Directories
-                
-                //Sending Dummy Packet
-                PrintWriter out = new PrintWriter(
+
+            //Sending Dummy Packet
+            PrintWriter out;
+            try {
+                out = new PrintWriter(
                         new BufferedWriter(
                                 new OutputStreamWriter(skt.getOutputStream())
                         ), true);
                 out.println("dummy");
                 out.flush();
-                //-- Sending Dummy Packet
+            } catch (IOException ex) {
+                Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                continue;
+            }
+            //-- Sending Dummy Packet
 
-                
+            try {
                 is = skt.getInputStream();
-                fos = new FileOutputStream(Constants.ROOT_DIR+filePath);//---actual fileName
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                continue;
+            }
 
-                while((readSize=is.read(fileByte))>0)//downloading file 
-                {
+            try {
+                fos = new FileOutputStream(Constants.ROOT_DIR + filePath);//---actual fileName
+
+                while ((readSize = is.read(fileByte)) > 0) {//downloading file 
                     fos.write(fileByte, 0, readSize);
                     fos.flush();
                 }
                 fos.close();
                 skt.close();
                 System.out.println("File Sent...");
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
-            
-        } catch (IOException ex) {
-            String msg = "\n\n**"+Constants.ERR_PORT + Constants.PORT_FILE_C2S+"**";
-            String sol = "SOLUTION: Find [PID_OF_PROCESS] running on port using command:"
-                    + "\n\tlsof -i :"+Constants.PORT_FILE_C2S+" | grep LISTEN | cut -d' ' -f2"
-                    + "\nAnd Kill Process using command:"
-                    + "\n\tkill -9 [PID_OF_PROCESS]\n\n";
-            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, msg + "\n"+ sol);
-            
-            ex.printStackTrace();
-        } catch (JSONException ex) {
-            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }
     
+    public void stopServer(){
+        try {
+            ss.close();
+            callback.onFrServerStopped();
+        } catch (IOException ex) {
+            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     
+    public interface FrCallback{
+        void onFrServerStarted();
+        void onFrServerStopped();
+    }
+
 }

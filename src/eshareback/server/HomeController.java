@@ -5,14 +5,13 @@
  */
 package eshareback.server;
 
+import esharebackserver.FileReceiver;
+import esharebackserver.FileSender;
 import esharebackserver.LsServer;
 import java.net.URL;
 import java.util.ResourceBundle;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 
 /**
@@ -20,40 +19,120 @@ import javafx.scene.control.TextArea;
  *
  * @author sagar
  */
-public class HomeController implements Initializable {
+public class HomeController 
+    implements Initializable, LsServer.LsCallback, FileReceiver.FrCallback, FileSender.FsCallback {
 
-    /**
-     * Initializes the controller class.
-     */
-    
-    @FXML
-    private Button startServer;
-    
-    @FXML
-    private Button stopServer;
-    
     @FXML
     private TextArea msgArea;
     
     LsServer lsServer = null;
+    FileReceiver frServer = null;
+    FileSender fsServer = null;
+    
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        lsServer = new LsServer();
-    }    
+        
+    }
     
-    public void startServer(){
-        new Thread(new Runnable() {
+    //Start Ls
+    public void startLs(){
+        Thread t = new Thread(new Runnable() {
 
             @Override
             public void run() {
                 lsServer.startServer();
             }
-        }).start();
-        msgArea.setText("Server Started Successfully...");
+        });
+        if(lsServer == null){
+            lsServer = new LsServer(this);
+            t.start();
+        }
     }
+    //-- Start Ls
     
-    public void stopServer(){
-        lsServer.stopServer();
-        msgArea.setText("Server Stopped...");
+    //Start Fs
+    public void startFs(){    
+    
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                fsServer.startServer();
+            }
+        });
+        if(fsServer == null){
+            fsServer = new FileSender(this);
+            t.start();
+        }
     }
+    //-- Start Fs
+    
+    //Start Fr
+    public void startFr(){
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                frServer.startServer();
+            }
+        });
+        if(frServer == null){
+            frServer = new FileReceiver(this);
+            t.start();
+        }
+    }
+    //-- Start Fr
+
+    //Stop Ls
+    public void stopLs(){
+        lsServer.stopServer();
+    }
+    //Stop Ls
+    
+    //Stop Fs
+    public void stopFs(){
+        fsServer.stopServer();
+    }
+    //Stop Fs
+    
+    //Stop Fr
+    public void stopFr(){
+        frServer.stopServer();
+    }
+    //Stop Fr
+
+    //Callbacks
+    @Override
+    public void onFsServerStarted() {
+        msgArea.appendText("\nFs Server Started...");
+    }
+
+    @Override
+    public void onFsServerStopped() {
+        msgArea.appendText("\nFs Server Stopped...");
+        fsServer = null;
+    }
+
+    @Override
+    public void onLsServerStarted() {
+        msgArea.appendText("\nLs Server Started...");
+    }
+
+    @Override
+    public void onLsServerStopped() {
+        msgArea.appendText("\nLs Server Stopped...");
+        lsServer = null;
+    }
+
+    @Override
+    public void onFrServerStarted() {
+        msgArea.appendText("\nFr Server Started...");
+    }
+
+    @Override
+    public void onFrServerStopped() {
+        msgArea.appendText("\nFr Server Stopped...");
+        frServer = null;
+    }
+    //-- Callbacks
 }
