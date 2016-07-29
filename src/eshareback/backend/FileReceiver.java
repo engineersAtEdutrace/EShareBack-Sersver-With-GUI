@@ -153,8 +153,9 @@ public class FileReceiver {
                 ex.printStackTrace();
             }
             //--Receiving File
-            
+
             //Convert File to Pdf
+            if(!filePath.toLowerCase().contains(".pdf"))
                 converter.convert(Constants.ROOT_DIR + filePath);
             //-- Convert File to Pdf
         }
