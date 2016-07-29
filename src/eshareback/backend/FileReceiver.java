@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package esharebackserver;
+package eshareback.backend;
 
+import eshareback.anithingtopdfconvert.ToPdfConverter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,9 +34,12 @@ public class FileReceiver {
 
     ServerSocket ss;
     
+    ToPdfConverter converter;
     FrCallback callback;
+    
     public FileReceiver(FrCallback callback){
         this.callback = callback;
+        converter = new ToPdfConverter();
     }
 
     public void startServer() {
@@ -110,7 +114,7 @@ public class FileReceiver {
             File f = new File(Constants.ROOT_DIR + filePath);
             f = f.getParentFile();
             f.mkdirs();
-                //-- Creating New Directories
+            //-- Creating New Directories
 
             //Sending Dummy Packet
             PrintWriter out;
@@ -134,6 +138,7 @@ public class FileReceiver {
                 continue;
             }
 
+            //Receiving File
             try {
                 fos = new FileOutputStream(Constants.ROOT_DIR + filePath);//---actual fileName
 
@@ -143,10 +148,15 @@ public class FileReceiver {
                 }
                 fos.close();
                 skt.close();
-                System.out.println("File Sent...");
+                System.out.println("File Received...");
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+            //--Receiving File
+            
+            //Convert File to Pdf
+                converter.convert(Constants.ROOT_DIR + filePath);
+            //-- Convert File to Pdf
         }
 
     }

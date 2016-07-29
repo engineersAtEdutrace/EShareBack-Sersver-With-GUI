@@ -3,3 +3,8 @@ This Project only deals with
 2) sending files to Student
 3) Converting files to PDF
 4) Directory and File Listing Remotely
+
+Steps of installation:-
+1) Install soffice (if not installed)
+2) Install XAMPP
+3) 

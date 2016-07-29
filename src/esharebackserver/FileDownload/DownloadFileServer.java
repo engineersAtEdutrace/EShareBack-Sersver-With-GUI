@@ -5,7 +5,7 @@
  */
 package esharebackserver.FileDownload;
 
-import esharebackserver.Constants;
+import eshareback.backend.Constants;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;

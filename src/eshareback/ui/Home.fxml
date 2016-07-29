@@ -7,7 +7,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane id="AnchorPane" prefHeight="400.0" prefWidth="600.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eshareback.server.HomeController">
+<AnchorPane id="AnchorPane" prefHeight="400.0" prefWidth="600.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eshareback.ui.HomeController">
     <stylesheets>
         <URL value="@home.css" />
     </stylesheets>
@@ -21,5 +21,7 @@
       <Button layoutX="317.0" layoutY="85.0" mnemonicParsing="false" onAction="#stopFs" text="Fs Stop" />
       <Button layoutX="21.0" layoutY="27.0" mnemonicParsing="false" onAction="#startFeedback" text="Feedback Start" />
       <Button layoutX="20.0" layoutY="72.0" mnemonicParsing="false" onAction="#stopFeedback" text="Feedback Stop" />
+      <Button layoutX="436.0" layoutY="27.0" mnemonicParsing="false" onAction="#startSoffice" text="SOffice Start" />
+      <Button layoutX="438.0" layoutY="72.0" mnemonicParsing="false" onAction="#stopSoffice" text="SOffice Stop" />
    </children>
 </AnchorPane>

@@ -3,13 +3,17 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package eshareback.server;
+package eshareback.ui;
 
-import esharebackserver.FeedbackServer;
-import esharebackserver.FileReceiver;
-import esharebackserver.FileSender;
-import esharebackserver.LsServer;
+import eshareback.anithingtopdfconvert.EnvChecker;
+import eshareback.backend.FeedbackServer;
+import eshareback.backend.FileReceiver;
+import eshareback.backend.FileSender;
+import eshareback.backend.LsServer;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
@@ -107,6 +111,67 @@ public class HomeController
         }
     }
     //-- Start Feedback
+    
+    //Start SOffice
+    public void startSoffice(){
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    startSOfficeService();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(HomeController.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    Logger.getLogger(HomeController.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+        t.start();
+    }
+    //-- Start SOffice
+    
+    //Stop SOffice
+    public void stopSoffice(){
+        if (System.getProperty("os.name").matches(("(?i).*Linux.*"))) {
+            try {
+                Runtime.getRuntime().exec("pkill soffice");
+            } catch (IOException ex) {
+                Logger.getLogger(HomeController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+    	}
+    }
+    //-- Stop SOffice
+    
+    //Start OpenOffice
+   private void startSOfficeService() throws InterruptedException, IOException {
+       
+        EnvChecker envChecker = new EnvChecker();
+        envChecker.createSh();
+       
+    	//Check if soffice is already running
+    	String commands = "pgrep soffice";
+    	Process process = Runtime.getRuntime().exec(commands);
+    	int code = process.waitFor();
+        //-- Check if soffice is already running
+        
+    	//If we get anything back from readLine, then we know the process is running
+    	BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+    	if (in.readLine() == null) {
+            
+    		//Nothing back, then we should execute the process
+                String home = System.getProperty("user.home");
+                String location = home+"/startsoffice.sh";
+    		process = Runtime.getRuntime().exec(location);
+    		code = process.waitFor();
+    		      System.out.println("soffice script started");
+    	} else {
+    		System.out.println("soffice script is already running");
+    	}
+
+    	in.close();
+    }
+    //Stop OpenOffice
 
     //Stop Ls
     public void stopLs(){
@@ -182,4 +247,17 @@ public class HomeController
     public void onDbStarted() {
         msgArea.appendText("\nDB Connected...");
     }
+    
+//    public static void main(String[] args) {
+//        try {
+//            HomeController con = new HomeController();
+//            EnvChecker e = new EnvChecker();
+//            e.createSh();
+//            con.startSOfficeService();
+//        } catch (InterruptedException ex) {
+//            Logger.getLogger(HomeController.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (IOException ex) {
+//            Logger.getLogger(HomeController.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
 }
