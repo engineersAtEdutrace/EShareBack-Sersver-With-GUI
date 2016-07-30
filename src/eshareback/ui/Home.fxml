@@ -23,5 +23,6 @@
       <Button layoutX="20.0" layoutY="72.0" mnemonicParsing="false" onAction="#stopFeedback" text="Feedback Stop" />
       <Button layoutX="436.0" layoutY="27.0" mnemonicParsing="false" onAction="#startSoffice" text="SOffice Start" />
       <Button layoutX="438.0" layoutY="72.0" mnemonicParsing="false" onAction="#stopSoffice" text="SOffice Stop" />
+      <Button layoutX="19.0" layoutY="126.0" mnemonicParsing="false" onAction="#startFo" text="File Operation Start" />
    </children>
 </AnchorPane>

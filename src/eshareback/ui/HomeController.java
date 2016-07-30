@@ -7,6 +7,7 @@ package eshareback.ui;
 
 import eshareback.anithingtopdfconvert.EnvChecker;
 import eshareback.backend.FeedbackServer;
+import eshareback.backend.FileOperationServer;
 import eshareback.backend.FileReceiver;
 import eshareback.backend.FileSender;
 import eshareback.backend.LsServer;
@@ -32,7 +33,8 @@ public class HomeController
     , LsServer.LsCallback
     , FileReceiver.FrCallback
     , FileSender.FsCallback
-    , FeedbackServer.Callback{
+    , FeedbackServer.Callback
+    , FileOperationServer.FileOperationsCallback{
 
     @FXML
     private TextArea msgArea;
@@ -41,6 +43,7 @@ public class HomeController
     FileReceiver frServer = null;
     FileSender fsServer = null;
     FeedbackServer fbServer = null;
+    FileOperationServer foServer = null;
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -95,6 +98,22 @@ public class HomeController
         }
     }
     //-- Start Fr
+    
+    //Start FO
+    public void startFo(){
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                foServer.startServer();
+            }
+        });
+        if(foServer == null){
+            foServer = new FileOperationServer(this);
+            t.start();
+        }
+    }
+    //-- Start FO
     
     //Start Feedback
     public void startFeedback(){
@@ -260,4 +279,15 @@ public class HomeController
 //            Logger.getLogger(HomeController.class.getName()).log(Level.SEVERE, null, ex);
 //        }
 //    }
+
+    @Override
+    public void onFOServerStarted() {
+        msgArea.appendText("\nFileOperations Server Started...");
+    }
+
+    @Override
+    public void onFOServerStopped() {        
+        msgArea.appendText("\nFileOperations Server Stopped...");
+        foServer = null;
+    }
 }
