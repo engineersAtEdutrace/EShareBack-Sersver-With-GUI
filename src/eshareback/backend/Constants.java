@@ -19,6 +19,7 @@ public class Constants {
     public static final int PORT_FILE_S2C=8104;
     public static final int PORT_FEEDBACK = 8107;
     public static final int PORT_FILE_OEPRATIONS = 8108;
+    public static final int PORT_SESSION_META = 8109;
     
     public static final int BUFFER_SIZE=8192;
     
@@ -34,6 +35,9 @@ public class Constants {
     public static final String JSON_FB_SESSION_ID = "session_id";
     public static final String JSON_FB_FILES = "files";
     public static final String JSON_FB_SESSION_NAME = "session_name";
+    public static final String JSON_FB_SESSIONS_INFO = "sm_request";
+    public static final String JSON_FB_INSTRUCTOR_ID = "instructor_id";
+    public static final String JSON_FB_TIMESTAMP = "timestamp";
     
     public static final String JSON_FO_OPERATION = "operation";
     public static final String JSON_FO_OLD_FILE = "old_file";

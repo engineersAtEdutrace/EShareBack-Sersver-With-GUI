@@ -53,6 +53,7 @@ public class FeedbackServer {
     final String ATTR_RATING_3 = "rating_3";
     final String ATTR_RATING_4 = "rating_4";
     final String ATTR_RATING_5 = "rating_5";
+    final String ATTR_INSTRUCTOR_ID = "instructor_id";
     
     final String ATTR_COMMENT = "comment";
     
@@ -73,6 +74,7 @@ public class FeedbackServer {
     }
     
     public static void main(String[] args) {
+        System.out.println("HEre");
         FeedbackServer fs = new FeedbackServer(new Callback() {
 
             @Override
@@ -90,12 +92,14 @@ public class FeedbackServer {
                // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         });
-        
+        System.out.println("session_info:"+fs.getSessionInfo("test"));
         //fs.startServer();
-        String sessionId = fs.createSesion("Test Session");
+        //String sessionId = fs.createSesion("Test Session");
         
-        for(int i=0; i<5; i++)
-        fs.insertFeedback(sessionId, "This is sample Comment", 4);
+//        for(int i=0; i<5; i++)
+//        fs.insertFeedback(sessionId, "This is sample Comment", 4);
+        
+        
     }
     
     public void startServer(){
@@ -183,11 +187,16 @@ public class FeedbackServer {
                         }
                         insertFile(sessionId, arrfiles);
                         break;
+                        
+                    case Constants.JSON_FB_SESSIONS_INFO:
+                        String instructorId = main.getString(Constants.JSON_FB_INSTRUCTOR_ID);
+                        String sessionInfo = getSessionInfo(instructorId);
+                        sendSessionInfo(skt, sessionInfo);
                 }
             }
             catch (JSONException ex) {
                 String str = Constants.ERR_JSON + "\n\t" + result;
-                Logger.getLogger(LsServer.class.getName()).log(Level.SEVERE, str );
+                Logger.getLogger(LsServer.class.getName()).log(Level.SEVERE, ex.getMessage() );
                 continue;
             }
             //-- Decode Request
@@ -355,6 +364,82 @@ public class FeedbackServer {
      
         System.out.println("Digest(in hex format):: " + sb.toString());
         return sb.toString();
+    }
+    
+    private String getSessionInfo(String instructorId){
+        try {
+            String sql = "SELECT "
+                    +ATTR_SESSION_ID+", "
+                    +ATTR_SESSION_NAME+", "
+                    +ATTR_TIMESTAMP+", "
+                    +ATTR_RATING_1+", "
+                    +ATTR_RATING_2+", "
+                    +ATTR_RATING_3+", "
+                    +ATTR_RATING_4+", "
+                    +ATTR_RATING_5+" "
+                    +" FROM "+ TABLE_SESSIONS
+                    +" ORDER BY "+ATTR_TIMESTAMP+" DESC "
+                    +" LIMIT 10";
+                    //+"WHERE "+ATTR_INSTRUCTOR_ID+"=?"
+                    ;
+            System.out.println(sql);
+            PreparedStatement prepStmt = con.prepareStatement(sql);
+//            prepStmt.setString(1, instructorId);
+            
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            JSONArray mainArr = new JSONArray();
+            while(rs.next()){
+                String sessionId = rs.getString(ATTR_SESSION_ID);
+                String sessionName = rs.getString(ATTR_SESSION_NAME);
+                String timeStamp = rs.getString(ATTR_TIMESTAMP);
+                String star1 = rs.getString(ATTR_RATING_1);
+                String star2 = rs.getString(ATTR_RATING_2);
+                String star3 = rs.getString(ATTR_RATING_3);
+                String star4 = rs.getString(ATTR_RATING_4);
+                String star5 = rs.getString(ATTR_RATING_5);
+                
+                JSONObject main = new JSONObject();
+                main.put(Constants.JSON_FB_SESSION_ID, sessionId);
+                main.put(Constants.JSON_FB_SESSION_NAME, sessionName);
+                main.put(Constants.JSON_FB_TIMESTAMP, timeStamp);
+                
+                JSONArray ratingsArr = new JSONArray(); //[2,4,6,7,8] [star1,star2,star3,star4,star5]
+                ratingsArr.put(star1);
+                ratingsArr.put(star2);
+                ratingsArr.put(star3);
+                ratingsArr.put(star4);
+                ratingsArr.put(star5);               
+                main.put(Constants.JSON_FB_RATING, ratingsArr);
+                
+                mainArr.put(main);
+            }
+            return mainArr.toString();
+        } catch (SQLException ex) {
+            Logger.getLogger(FeedbackServer.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JSONException ex) {
+            Logger.getLogger(FeedbackServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    private void sendSessionInfo(Socket skt, String response){
+        
+        try{
+                //Sending Response
+                PrintWriter out = new PrintWriter(
+                            new BufferedWriter(
+                                    new OutputStreamWriter(skt.getOutputStream())
+                            ), true);
+                out.println(response + Constants.END_OF_MSG);
+                System.out.println("Response: "+response);
+                out.flush();
+                //-- Sending Response
+            }
+            catch(IOException ex){
+                ex.printStackTrace();
+            }
+        
     }
     
     public interface Callback{
