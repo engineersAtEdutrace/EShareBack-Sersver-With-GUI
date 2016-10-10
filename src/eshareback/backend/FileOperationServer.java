@@ -95,10 +95,8 @@ public class FileOperationServer {
                         break;
                         
                     case Constants.FO_DELETE:
-                        String filePaths = main.getString(Constants.JSON_FO_OLD_FILE);
-                        JSONArray files = new JSONArray();
-                        files.put(filePaths);
-                        ArrayList<String> al = fileOperations.delete(files);
+                        JSONArray files = main.getJSONArray(Constants.JSON_FILES);
+                        ArrayList<String> alErrFile = fileOperations.delete(files);
                         //return***
                         break;
                         
