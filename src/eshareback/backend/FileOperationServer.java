@@ -88,10 +88,9 @@ public class FileOperationServer {
                 String requestType = main.getString(Constants.JSON_FO_OPERATION);
                 switch(requestType){
                     case Constants.FO_COPY:
-                        String oldPath = main.getString(Constants.JSON_FO_OLD_FILE);
-                        String newPath = main.getString(Constants.JSON_FO_NEW_FILE);
-                        
-                        boolean response = fileOperations.copy(oldPath, newPath);
+                        String destPath = main.getString(Constants.JSON_FO_DEST_PATH);
+                        JSONArray arr = main.getJSONArray(Constants.JSON_FILES);
+                        boolean response = fileOperations.copy(destPath, arr);
                         break;
                         
                     case Constants.FO_DELETE:
@@ -106,14 +105,14 @@ public class FileOperationServer {
                         break;
                         
                     case Constants.FO_MOVE:
-                        oldPath = main.getString(Constants.JSON_FO_OLD_FILE);
-                        newPath = main.getString(Constants.JSON_FO_NEW_FILE);
-                        response = fileOperations.move(oldPath, newPath);
+                        destPath = main.getString(Constants.JSON_FO_DEST_PATH);
+                        arr = main.getJSONArray(Constants.JSON_FILES);
+                        response = fileOperations.move(destPath, arr);
                         break;
                         
                     case Constants.FO_RENAME:
-                        oldPath = main.getString(Constants.JSON_FO_OLD_FILE);
-                        newPath = main.getString(Constants.JSON_FO_NEW_FILE);
+                        String oldPath = main.getString(Constants.JSON_FO_OLD_FILE);
+                        String newPath = main.getString(Constants.JSON_FO_NEW_FILE);
                         response = fileOperations.rename(oldPath, newPath);
                         break;
                 }

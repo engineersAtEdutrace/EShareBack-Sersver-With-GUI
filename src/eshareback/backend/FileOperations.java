@@ -44,26 +44,32 @@ public class FileOperations {
         return f.renameTo(newF);
     }
     
-    public boolean copy(String oldPath, String newPath){
-        try {
-            File oldF = new File(Constants.ROOT_DIR + oldPath);
-            File newF = new File(Constants.ROOT_DIR + newPath);
-            Files.copy(oldF.toPath(), newF.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            return true;
-        } catch (IOException ex) {
-            Logger.getLogger(FileOperations.class.getName()).log(Level.SEVERE, null, ex);
+    public boolean copy(String destPath, JSONArray filePaths){
+        for(int i=0; i<filePaths.length(); i++){
+            try {
+                String oldPath = filePaths.getString(i);
+                File oldF = new File(Constants.ROOT_DIR + oldPath);
+                File newF = new File(Constants.ROOT_DIR + destPath + oldF.getName());
+                Files.copy(oldF.toPath(), newF.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                return true;
+            } catch (IOException | JSONException ex) {
+                Logger.getLogger(FileOperations.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return false;
     }
     
-    public boolean move(String oldPath, String newPath){
-        try {
-            File oldF = new File(Constants.ROOT_DIR + oldPath);
-            File newF = new File(Constants.ROOT_DIR + newPath);
-            Files.move(oldF.toPath(), newF.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            return true;
-        } catch (IOException ex) {
-            Logger.getLogger(FileOperations.class.getName()).log(Level.SEVERE, null, ex);
+    public boolean move(String destPath, JSONArray filePaths){
+        for(int i=0; i<filePaths.length(); i++){
+            try {
+                String oldPath = filePaths.getString(i);
+                File oldF = new File(Constants.ROOT_DIR + oldPath);
+                File newF = new File(Constants.ROOT_DIR + destPath + oldF.getName());
+                Files.move(oldF.toPath(), newF.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                return true;
+            } catch (IOException | JSONException ex) {
+                Logger.getLogger(FileOperations.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return false;
     }

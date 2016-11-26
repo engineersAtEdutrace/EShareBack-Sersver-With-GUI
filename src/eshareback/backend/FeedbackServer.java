@@ -5,6 +5,12 @@
  */
 package eshareback.backend;
 
+import com.google.gson.Gson;
+import eshareback.dto.LoginRequestDTO;
+import eshareback.dto.LoginResponseDTO;
+import eshareback.dto.RegisterRequestDTO;
+import eshareback.dto.RegisterResponseDTO;
+import eshareback.dto.SessionDTO;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,6 +30,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.logging.Level;
@@ -38,28 +45,9 @@ import org.json.JSONObject;
  */
 public class FeedbackServer {
     
-    final String USERNAME = "root";
-    final String PASSWORD = "";
-    final String DB_NAME = "ESHAREBACK";
-    final String TABLE_SESSIONS = "Sessions";
-    final String TABLE_FEEDBACKS = "Feedbacks";
-    final String TABLE_SESSION_FILES = "SessionFiles";
     
-    final String ATTR_SESSION_ID = "session_id";
-    final String ATTR_SESSION_NAME = "session_name";
-    final String ATTR_TIMESTAMP = "timestamp";
-    final String ATTR_RATING_1 = "rating_1";
-    final String ATTR_RATING_2 = "rating_2";
-    final String ATTR_RATING_3 = "rating_3";
-    final String ATTR_RATING_4 = "rating_4";
-    final String ATTR_RATING_5 = "rating_5";
-    final String ATTR_INSTRUCTOR_ID = "instructor_id";
     
-    final String ATTR_COMMENT = "comment";
-    
-    final String ATTR_FILE = "file";
-    
-    final String DB_URL = "jdbc:mysql://localhost:3306/"+DB_NAME;
+    final String DB_URL = "jdbc:mysql://localhost:3306/"+TableConstants.DB_NAME;
     Connection con = null;
     Statement stmt = null;
     
@@ -192,6 +180,27 @@ public class FeedbackServer {
                         String instructorId = main.getString(Constants.JSON_FB_INSTRUCTOR_ID);
                         String sessionInfo = getSessionInfo(instructorId);
                         sendSessionInfo(skt, sessionInfo);
+                        break;
+                        
+                    case Constants.FB_EVENT_SESSION_DETAILS:
+                        sessionId = main.getString(Constants.JSON_FB_SESSION_ID);
+                        SessionDTO  dto = getSessionDetails(sessionId);
+                        sendSessionDetails(skt, new Gson().toJson(dto));
+                        break;
+                        
+                    case Constants.FB_EVENT_LOGIN:
+                        String value = main.getJSONObject(Constants.JSON_FB_VALUE).toString();
+                        LoginRequestDTO loginDto = new Gson().fromJson(value, LoginRequestDTO.class);
+                        LoginResponseDTO responseDTO = login(loginDto.getUsername(), loginDto.getPassword());
+                        sendSessionDetails(skt, new Gson().toJson(responseDTO));
+                        break;
+                        
+                    case Constants.FB_EVENT_REGISTER:
+                        value = main.getJSONObject(Constants.JSON_FB_VALUE).toString();
+                        RegisterRequestDTO regRequestDto = new Gson().fromJson(value, RegisterRequestDTO.class);
+                        RegisterResponseDTO regResponseDto = register(regRequestDto);
+                        sendSessionDetails(skt, new Gson().toJson(regResponseDto));
+                        break;
                 }
             }
             catch (JSONException ex) {
@@ -237,35 +246,35 @@ public class FeedbackServer {
         
         try {
             System.out.println("Connecting to Database...");
-            con =  DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            con =  DriverManager.getConnection(DB_URL, TableConstants.USERNAME, TableConstants.PASSWORD);
             stmt = con.createStatement();
             
-            String sql = "CREATE DATABASE IF NOT EXISTS "+DB_NAME;
+            String sql = "CREATE DATABASE IF NOT EXISTS "+TableConstants.DB_NAME;
             stmt.executeUpdate(sql);
             
-            sql = "CREATE TABLE IF NOT EXISTS "+TABLE_SESSIONS+" (\n" +
-                    "	"+ATTR_SESSION_ID+"	VARCHAR(32),\n" +
-                    "	"+ATTR_SESSION_NAME+"	TEXT,\n" +
-                    "	"+ATTR_TIMESTAMP+"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n" +
-                    "	"+ATTR_RATING_1+"	INTEGER DEFAULT 0,\n" +
-                    "	"+ATTR_RATING_2+"	INTEGER DEFAULT 0,\n" +
-                    "	"+ATTR_RATING_3+"	INTEGER DEFAULT 0,\n" +
-                    "	"+ATTR_RATING_4+"	INTEGER DEFAULT 0,\n" +
-                    "	"+ATTR_RATING_5+"	INTEGER DEFAULT 0\n" +
+            sql = "CREATE TABLE IF NOT EXISTS "+TableConstants.TABLE_SESSIONS+" (\n" +
+                    "	"+TableConstants.ATTR_SESSION_ID+"	VARCHAR(32),\n" +
+                    "	"+TableConstants.ATTR_SESSION_NAME+"	TEXT,\n" +
+                    "	"+TableConstants.ATTR_TIMESTAMP+"	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n" +
+                    "	"+TableConstants.ATTR_RATING_1+"	INTEGER DEFAULT 0,\n" +
+                    "	"+TableConstants.ATTR_RATING_2+"	INTEGER DEFAULT 0,\n" +
+                    "	"+TableConstants.ATTR_RATING_3+"	INTEGER DEFAULT 0,\n" +
+                    "	"+TableConstants.ATTR_RATING_4+"	INTEGER DEFAULT 0,\n" +
+                    "	"+TableConstants.ATTR_RATING_5+"	INTEGER DEFAULT 0\n" +
                     ")";
             System.out.println(sql);
             stmt.executeUpdate(sql);
             
-            sql = "CREATE TABLE IF NOT EXISTS "+TABLE_FEEDBACKS+" (\n" +
-            "	"+ATTR_SESSION_ID+"	VARCHAR(32) NOT NULL,\n" +
-            "	"+ATTR_COMMENT+"	TEXT\n" +
+            sql = "CREATE TABLE IF NOT EXISTS "+TableConstants.TABLE_FEEDBACKS+" (\n" +
+            "	"+TableConstants.ATTR_SESSION_ID+"	VARCHAR(32) NOT NULL,\n" +
+            "	"+TableConstants.ATTR_COMMENT+"	TEXT\n" +
             ")";
             System.out.println(sql);
             stmt.executeUpdate(sql);
             
-            sql = "CREATE TABLE IF NOT EXISTS "+TABLE_SESSION_FILES+" (\n" +
-            "	"+ATTR_SESSION_ID+"	VARCHAR(32) NOT NULL,\n" +
-            "	"+ATTR_FILE+"	TEXT\n" +
+            sql = "CREATE TABLE IF NOT EXISTS "+TableConstants.TABLE_SESSION_FILES+" (\n" +
+            "	"+TableConstants.ATTR_SESSION_ID+"	VARCHAR(32) NOT NULL,\n" +
+            "	"+TableConstants.ATTR_FILE+"	TEXT\n" +
             ")";
             System.out.println(sql);
             stmt.executeUpdate(sql);
@@ -282,7 +291,7 @@ public class FeedbackServer {
             Timestamp t = new Timestamp(System.currentTimeMillis());
             String sessionId = getMd5Hash(sessionName+t);
             
-            String sql = "INSERT INTO "+TABLE_SESSIONS+" ("+ATTR_SESSION_ID+","+ATTR_SESSION_NAME+")"
+            String sql = "INSERT INTO "+TableConstants.TABLE_SESSIONS+" ("+TableConstants.ATTR_SESSION_ID+","+TableConstants.ATTR_SESSION_NAME+")"
                 + " VALUES (?,?)";
             
             PreparedStatement prepStmt = con.prepareStatement(sql);
@@ -304,7 +313,7 @@ public class FeedbackServer {
     private void insertFeedback(String sessionId, String comment, int rating){
         
         try {
-            String sql = "INSERT INTO "+TABLE_FEEDBACKS+" ("+ATTR_SESSION_ID+","+ATTR_COMMENT+")"
+            String sql = "INSERT INTO "+TableConstants.TABLE_FEEDBACKS+" ("+TableConstants.ATTR_SESSION_ID+","+TableConstants.ATTR_COMMENT+")"
                     + " VALUES (?,?)";
             
             PreparedStatement prepStmt = con.prepareStatement(sql);
@@ -314,13 +323,13 @@ public class FeedbackServer {
             prepStmt.executeUpdate();
             String temp = "";
             switch(rating){
-                case 1: temp = ATTR_RATING_1; break;
-                case 2: temp = ATTR_RATING_2; break;
-                case 3: temp = ATTR_RATING_3; break;
-                case 4: temp = ATTR_RATING_4; break;
-                case 5: temp = ATTR_RATING_5; break;                                
+                case 1: temp = TableConstants.ATTR_RATING_1; break;
+                case 2: temp = TableConstants.ATTR_RATING_2; break;
+                case 3: temp = TableConstants.ATTR_RATING_3; break;
+                case 4: temp = TableConstants.ATTR_RATING_4; break;
+                case 5: temp = TableConstants.ATTR_RATING_5; break;                                
             }
-            sql = "UPDATE "+ TABLE_SESSIONS +" SET "+temp +" = "+ temp +"+1 WHERE "+ATTR_SESSION_ID+"=?";/***ERROR PRONE AREA***/
+            sql = "UPDATE "+ TableConstants.TABLE_SESSIONS +" SET "+temp +" = "+ temp +"+1 WHERE "+TableConstants.ATTR_SESSION_ID+"=?";/***ERROR PRONE AREA***/
             prepStmt = con.prepareStatement(sql);
             prepStmt.setString(1, sessionId);
             prepStmt.executeUpdate();
@@ -334,7 +343,7 @@ public class FeedbackServer {
         try {
             
             for(String filePath: files){
-                String sql = "INSERT INTO "+TABLE_FEEDBACKS+" ("+ATTR_SESSION_ID+","+ATTR_FILE+")"
+                String sql = "INSERT INTO "+TableConstants.TABLE_FEEDBACKS+" ("+TableConstants.ATTR_SESSION_ID+","+TableConstants.ATTR_FILE+")"
                         + " VALUES (?,?)";
 
                 PreparedStatement prepStmt = con.prepareStatement(sql);
@@ -369,16 +378,16 @@ public class FeedbackServer {
     private String getSessionInfo(String instructorId){
         try {
             String sql = "SELECT "
-                    +ATTR_SESSION_ID+", "
-                    +ATTR_SESSION_NAME+", "
-                    +ATTR_TIMESTAMP+", "
-                    +ATTR_RATING_1+", "
-                    +ATTR_RATING_2+", "
-                    +ATTR_RATING_3+", "
-                    +ATTR_RATING_4+", "
-                    +ATTR_RATING_5+" "
-                    +" FROM "+ TABLE_SESSIONS
-                    +" ORDER BY "+ATTR_TIMESTAMP+" DESC "
+                    +TableConstants.ATTR_SESSION_ID+", "
+                    +TableConstants.ATTR_SESSION_NAME+", "
+                    +TableConstants.ATTR_TIMESTAMP+", "
+                    +TableConstants.ATTR_RATING_1+", "
+                    +TableConstants.ATTR_RATING_2+", "
+                    +TableConstants.ATTR_RATING_3+", "
+                    +TableConstants.ATTR_RATING_4+", "
+                    +TableConstants.ATTR_RATING_5+" "
+                    +" FROM "+ TableConstants.TABLE_SESSIONS
+                    +" ORDER BY "+TableConstants.ATTR_TIMESTAMP+" DESC "
                     +" LIMIT 10";
                     //+"WHERE "+ATTR_INSTRUCTOR_ID+"=?"
                     ;
@@ -390,14 +399,14 @@ public class FeedbackServer {
             
             JSONArray mainArr = new JSONArray();
             while(rs.next()){
-                String sessionId = rs.getString(ATTR_SESSION_ID);
-                String sessionName = rs.getString(ATTR_SESSION_NAME);
-                String timeStamp = rs.getString(ATTR_TIMESTAMP);
-                String star1 = rs.getString(ATTR_RATING_1);
-                String star2 = rs.getString(ATTR_RATING_2);
-                String star3 = rs.getString(ATTR_RATING_3);
-                String star4 = rs.getString(ATTR_RATING_4);
-                String star5 = rs.getString(ATTR_RATING_5);
+                String sessionId = rs.getString(TableConstants.ATTR_SESSION_ID);
+                String sessionName = rs.getString(TableConstants.ATTR_SESSION_NAME);
+                String timeStamp = rs.getString(TableConstants.ATTR_TIMESTAMP);
+                String star1 = rs.getString(TableConstants.ATTR_RATING_1);
+                String star2 = rs.getString(TableConstants.ATTR_RATING_2);
+                String star3 = rs.getString(TableConstants.ATTR_RATING_3);
+                String star4 = rs.getString(TableConstants.ATTR_RATING_4);
+                String star5 = rs.getString(TableConstants.ATTR_RATING_5);
                 
                 JSONObject main = new JSONObject();
                 main.put(Constants.JSON_FB_SESSION_ID, sessionId);
@@ -423,6 +432,62 @@ public class FeedbackServer {
         return null;
     }
     
+    public SessionDTO getSessionDetails(String sessionId){
+        
+        try{
+            String sql1 = "SELECT "
+                        +TableConstants.ATTR_SESSION_ID+", "
+                        +TableConstants.ATTR_SESSION_NAME+", "
+                        +TableConstants.ATTR_TIMESTAMP+", "
+                        +TableConstants.ATTR_RATING_1+", "
+                        +TableConstants.ATTR_RATING_2+", "
+                        +TableConstants.ATTR_RATING_3+", "
+                        +TableConstants.ATTR_RATING_4+", "
+                        +TableConstants.ATTR_RATING_5+" "
+                        +" FROM "+ TableConstants.TABLE_SESSIONS
+                        +" WHERE "+TableConstants.ATTR_SESSION_ID+"=\""+sessionId+"\"";
+
+            String sql2 = "SELECT "+
+                    TableConstants.ATTR_COMMENT + 
+                    " FROM " + TableConstants.TABLE_FEEDBACKS +
+                    " WHERE " + TableConstants.ATTR_SESSION_ID + "=\""+sessionId+"\"";
+            
+            
+            ResultSet rs2 = stmt.executeQuery(sql2);
+
+            ArrayList<String> comments = new ArrayList<>();
+            while(rs2.next()){
+                String comment = rs2.getString(TableConstants.ATTR_COMMENT);
+                comments.add(comment);
+            }
+
+            ResultSet rs1 = stmt.executeQuery(sql1);
+            SessionDTO dto = new SessionDTO();
+            while(rs1.next()){
+                dto.setSessionId(sessionId);
+
+                dto.setComments(comments);
+
+                dto.setDate(rs1.getDate(TableConstants.ATTR_TIMESTAMP));
+
+                int rating[] = new int[TableConstants.MAX_RATING];
+                rating[0] = rs1.getInt(TableConstants.ATTR_RATING_1);
+                rating[1] = rs1.getInt(TableConstants.ATTR_RATING_2);
+                rating[2] = rs1.getInt(TableConstants.ATTR_RATING_3);
+                rating[3] = rs1.getInt(TableConstants.ATTR_RATING_4);
+                rating[4] = rs1.getInt(TableConstants.ATTR_RATING_5);
+                dto.setRating(rating);
+
+                dto.setSessionName(rs1.getString(TableConstants.ATTR_SESSION_NAME));
+            }
+            return dto;
+        }
+        catch(SQLException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
     private void sendSessionInfo(Socket skt, String response){
         
         try{
@@ -440,6 +505,54 @@ public class FeedbackServer {
                 ex.printStackTrace();
             }
         
+    }
+    
+    private void sendSessionDetails(Socket skt, String response){
+        
+        try{
+                //Sending Response
+                PrintWriter out = new PrintWriter(
+                            new BufferedWriter(
+                                    new OutputStreamWriter(skt.getOutputStream())
+                            ), true);
+                out.println(response + Constants.END_OF_MSG);
+                System.out.println("Response: "+response);
+                out.flush();
+                //-- Sending Response
+            }
+            catch(IOException ex){
+                ex.printStackTrace();
+            }
+        
+    }
+    
+    private LoginResponseDTO login(String username, String pass){
+        /*
+        ***LOGIN work
+        */
+        LoginResponseDTO response = new LoginResponseDTO();
+        if(username.equals(pass)){
+            response.setLoginToken("BLAH BLAH TOKEN");
+        }
+        else
+            response.setLoginToken(null);
+        
+        return response;
+    }
+    
+    private RegisterResponseDTO register(RegisterRequestDTO dto){
+        String fname = dto.getFname();
+        String lname = dto.getLname();
+        String email = dto.getEmail();
+        String password = dto.getPass();
+        
+        /*
+            ***Register work
+        */
+        
+        RegisterResponseDTO responseDto = new RegisterResponseDTO();
+        responseDto.setResult("Sahi hai bhai ho gaya");
+        return responseDto;
     }
     
     public interface Callback{

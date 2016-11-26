@@ -38,22 +38,26 @@ public class Constants {
     public static final String JSON_FB_SESSIONS_INFO = "sm_request";
     public static final String JSON_FB_INSTRUCTOR_ID = "instructor_id";
     public static final String JSON_FB_TIMESTAMP = "timestamp";
+    public static final String JSON_FB_VALUE = "value";
     
     public static final String JSON_FO_OPERATION = "operation";
     public static final String JSON_FO_OLD_FILE = "old_file";
     public static final String JSON_FO_NEW_FILE = "new_file";
     public static final String JSON_FO_DIR_PATH = "new_dir";
+    public static final String JSON_FO_DEST_PATH = "dest_path";
     
     public static final String FO_MKDIR = "mkdir";
     public static final String FO_DELETE = "delete";
     public static final String FO_MOVE = "move";
     public static final String FO_RENAME = "rename";
-    public static final String FO_COPY = "copy";
-    
+    public static final String FO_COPY = "copy";    
     
     public static final String FB_EVENT_CREATE_SESSION = "create_session";
     public static final String FB_EVENT_FEEBACK = "feedback";
+    public static final String FB_EVENT_LOGIN = "login";
+    public static final String FB_EVENT_REGISTER = "register";
     public static final String FB_EVENT_FILE_ADDED = "file_added";
+    public static final String FB_EVENT_SESSION_DETAILS = "session_details";
     
     public static final String FB_SESSION_NAME = "session_name";
             
